@@ -86,16 +86,18 @@ class Slice : public ExtentStorage<extent>, public StrideStorage<stride> {
   Slice(It first, std::size_t count, std::ptrdiff_t skip)
       : ExtentStorage<extent>(count), StrideStorage<stride>(skip), data_(std::to_address(first)) {}
 
-  using value_type = std::remove_cv_t<T>;
+  class iterator;
+
+  using value_type = typename iterator::value_type;
   using element_type = T;
   using size_type = std::size_t;
-  using pointer = T *;
+  using pointer = typename iterator::pointer;
   using const_pointer = const T *;
-  using reference = element_type &;
+  using reference = typename iterator::reference;
   using const_reference = const element_type &;
-  using difference_type = std::ptrdiff_t;
+  using difference_type = typename iterator::difference_type;
 
-  reference operator[](size_type index) const {
+  T &operator[](size_type index) const {
     return *(data_ + index * this->Stride());
   }
 
@@ -121,10 +123,10 @@ class Slice : public ExtentStorage<extent>, public StrideStorage<stride> {
   class iterator : private StrideStorage<stride> {
    public:
     using iterator_category = std::contiguous_iterator_tag;
-    using difference_type = difference_type;
-    using value_type = value_type;
-    using pointer = pointer;
-    using reference = reference;
+    using difference_type = std::ptrdiff_t;
+    using value_type = std::remove_cv_t<T>;
+    using pointer = T *;
+    using reference = element_type &;
 
     friend Slice;
 
