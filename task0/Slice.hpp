@@ -67,9 +67,6 @@ constexpr auto divide_round_up(T a, U b) {
 
 } // namespace
 
-template<typename... Args>
-void whatis();
-
 template
     <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1>
 class Slice : public ExtentStorage<extent>, public StrideStorage<stride> {
