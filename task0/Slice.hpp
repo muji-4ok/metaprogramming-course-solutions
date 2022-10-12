@@ -65,7 +65,7 @@ constexpr auto divide_round_up(T a, U b) {
   return (a + b - 1) / b;
 }
 
-}
+} // namespace
 
 template<typename... Args>
 void whatis();
