@@ -75,7 +75,7 @@ struct HeadImpl<E> {
 };
 
 template<TypeList TL>
-using Head = typename HeadImpl<TL>::TLOut;
+using GetHead = typename HeadImpl<TL>::TLOut;
 
 // ** TAIL **
 template<TypeList TL>
@@ -89,11 +89,11 @@ struct TailImpl<E> {
 };
 
 template<TypeList TL>
-using Tail = typename TailImpl<TL>::TLOut;
+using GetTail = typename TailImpl<TL>::TLOut;
 
 template<std::size_t N, TypeList TL>
 struct TakeImpl {
-  using TLOut = Cons<Head<TL>, typename TakeImpl<N - 1, Tail<TL>>::TLOut>;
+  using TLOut = Cons<GetHead<TL>, typename TakeImpl<N - 1, GetTail<TL>>::TLOut>;
 };
 
 template<std::size_t N, Empty E>
@@ -108,7 +108,7 @@ struct TakeImpl<0, TL> {
 
 template<std::size_t N, TypeList TL>
 struct DropImpl {
-  using TLOut = Tail<typename DropImpl<N - 1, TL>::TLOut>;
+  using TLOut = GetTail<typename DropImpl<N - 1, TL>::TLOut>;
 };
 
 template<TypeList TL>
@@ -182,8 +182,8 @@ template<template<typename> typename MetaPredicate, TypeSequence TL> requires (!
     typename TL::Head>::Value)
 struct Filter<MetaPredicate, TL> {
   using Next = Filter<MetaPredicate, typename TL::Tail>;
-  using Head = Head<Next>;
-  using Tail = Tail<Next>;
+  using Head = GetHead<Next>;
+  using Tail = GetTail<Next>;
 };
 
 template<template<typename> typename MetaPredicate, Empty E>
@@ -229,7 +229,7 @@ struct InitsImpl {
   using Tail = InitsImpl<N + 1, TL>;
 };
 
-template<std::size_t N, TypeList TL> requires (std::same_as<Take<N, TL>, TL>)
+template<std::size_t N, TypeList TL> requires(std::same_as<Take<N, TL>, TL>)
 struct InitsImpl<N, TL> {
   using Head = Take<N, TL>;
   using Tail = Nil;
@@ -237,7 +237,7 @@ struct InitsImpl<N, TL> {
 
 }
 
-template <TypeList TL>
+template<TypeList TL>
 using Inits = InitsImpl<0, TL>;
 
 template<TypeList TL>
@@ -252,21 +252,21 @@ struct Tails<E> {
   using Tail = E;
 };
 
-template <TypeList Left, TypeList Right>
+template<TypeList Left, TypeList Right>
 struct Zip2 {
   using Head = type_tuples::TTuple<typename Left::Head, typename Right::Head>;
   using Tail = Zip2<typename Left::Tail, typename Right::Tail>;
 };
 
-template <Empty E, TypeList Right>
+template<Empty E, TypeList Right>
 struct Zip2<E, Right> : public E {
 };
 
-template <TypeList Left, Empty E>
+template<TypeList Left, Empty E>
 struct Zip2<Left, E> : public E {
 };
 
-template <TypeList... TLs>
+template<TypeList... TLs>
 struct Zip {
   using Head = type_tuples::TTuple<typename TLs::Head...>;
   using Tail = Zip<typename TLs::Tail...>;
