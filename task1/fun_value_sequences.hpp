@@ -66,7 +66,7 @@ struct IsPrime {
 
   using Filtered = type_lists::Filter<Predicate, Dividers>;
 
-  static constexpr bool Value = type_lists::Empty<type_lists::Tail<Filtered>>;
+  static constexpr bool Value = type_lists::Empty<type_lists::GetTail<Filtered>>;
 };
 
 }
