@@ -61,9 +61,19 @@ concept Container = requires(U container) {
 };
 
 template<typename T, typename U>
-constexpr auto divide_round_up(T a, U b) {
+constexpr auto DivideRoundUp(T a, U b) {
   return (a + b - 1) / b;
 }
+
+consteval std::size_t SkipExtent(std::size_t extent, std::ptrdiff_t stride, std::ptrdiff_t skip) {
+  return (extent == std::dynamic_extent || stride == dynamic_stride) ? std::dynamic_extent
+                                                                     : DivideRoundUp(extent, skip);
+}
+
+consteval std::ptrdiff_t SkipStride(std::ptrdiff_t stride, std::ptrdiff_t skip) {
+  return stride == dynamic_stride ? stride : (stride * skip);
+}
+
 
 } // namespace
 
@@ -198,20 +208,8 @@ class Slice : public ExtentStorage<extent>, public StrideStorage<stride> {
       return this->ptr_ - other.ptr_;
     }
 
-    bool operator<(const iterator &other) const {
-      return this->ptr_ < other.ptr_;
-    }
-
-    bool operator>(const iterator &other) const {
-      return other < *this;
-    }
-
-    bool operator>=(const iterator &other) const {
-      return !(*this < other);
-    }
-
-    bool operator<=(const iterator &other) const {
-      return !(other < *this);
+    auto operator<=>(const iterator &other) const {
+      return this->ptr_ <=> other.ptr_;
     }
 
     bool operator==(const iterator &other) const {
@@ -293,15 +291,12 @@ class Slice : public ExtentStorage<extent>, public StrideStorage<stride> {
   }
 
   Slice<T, std::dynamic_extent, dynamic_stride> Skip(std::ptrdiff_t skip) const {
-    return {data_, divide_round_up(this->Size(), skip), this->Stride() * skip};
+    return {data_, DivideRoundUp(this->Size(), skip), this->Stride() * skip};
   }
 
   template<std::ptrdiff_t skip>
-  Slice<T,
-        (extent == std::dynamic_extent || stride == dynamic_stride) ? std::dynamic_extent
-                                                                    : divide_round_up(extent, skip),
-        stride == dynamic_stride ? stride : (stride * skip)> Skip() const {
-    return {data_, divide_round_up(this->Size(), skip), this->Stride() * skip};
+  Slice<T, SkipExtent(extent, stride, skip), SkipStride(stride, skip)> Skip() const {
+    return {data_, DivideRoundUp(this->Size(), skip), this->Stride() * skip};
   }
 
  private:
