@@ -9,24 +9,20 @@
 template<class Enum, std::size_t MAXN = 512> requires std::is_enum_v<Enum>
 struct EnumeratorTraits {
     static constexpr std::size_t size() noexcept {
-        constexpr auto valid = valid_map();
-        return std::accumulate(valid.begin(), valid.end(), 0);
+        return std::accumulate(valid_map.begin(), valid_map.end(), 0);
     }
 
     static constexpr Enum at(std::size_t i) noexcept {
-        constexpr auto values_array = values();
-        return values_array[i];
+        return values[i];
     }
 
     static constexpr std::string_view nameAt(std::size_t i) noexcept {
-        constexpr auto names_array = names();
-        return names_array[i];
+        return names[i];
     }
 
  private:
     using enum_type = std::underlying_type_t<Enum>;
-
-    static constexpr auto names() {
+    static constexpr auto generate_names() {
         return names_from_indices(std::make_index_sequence<size()>());
     }
 
@@ -40,13 +36,13 @@ struct EnumeratorTraits {
         return name<at(index)>();
     }
 
-    static constexpr auto values() {
+    static constexpr auto generate_values() {
         return values_from_indices(std::make_index_sequence<size()>());
     }
 
     template<std::size_t... Is>
     static constexpr auto values_from_indices(std::index_sequence<Is...>) {
-        constexpr auto valid = valid_map();
+        constexpr auto valid = valid_map;
         constexpr auto values_count = sizeof...(Is);
 
         Enum values_storage[values_count];
@@ -69,7 +65,7 @@ struct EnumeratorTraits {
         return std::min(MAXN, static_cast<std::size_t>(std::numeric_limits<enum_type>::max()));
     }
 
-    static constexpr auto valid_map() noexcept {
+    static constexpr auto generate_valid_map() noexcept {
         constexpr std::size_t possible_values = max_possible() - min_possible() + 1;
         return valid_map_from_indices(std::make_index_sequence<possible_values>());
     }
@@ -117,4 +113,8 @@ struct EnumeratorTraits {
 
         return pretty_name.substr(start, size);
     }
+
+    inline static constexpr auto valid_map = EnumeratorTraits::generate_valid_map();
+    inline static constexpr auto values = EnumeratorTraits::generate_values();
+    inline static constexpr auto names = EnumeratorTraits::generate_names();
 };
