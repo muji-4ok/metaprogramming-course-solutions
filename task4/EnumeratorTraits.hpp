@@ -22,6 +22,7 @@ struct EnumeratorTraits {
 
  private:
     using enum_type = std::underlying_type_t<Enum>;
+
     static constexpr auto generate_names() {
         return names_from_indices(std::make_index_sequence<size()>());
     }
