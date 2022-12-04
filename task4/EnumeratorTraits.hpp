@@ -81,11 +81,7 @@ struct EnumeratorTraits {
     }
 
     static constexpr enum_type index_to_value(std::size_t i) {
-        if constexpr (std::is_signed_v<enum_type>) {
-            return i + min_possible();
-        } else {
-            return i;
-        }
+        return i + min_possible();
     }
 
     template<Enum e>
