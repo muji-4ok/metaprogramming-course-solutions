@@ -92,9 +92,13 @@ struct EnumeratorTraits {
     static constexpr std::string_view name() {
         std::string_view pretty_name = __PRETTY_FUNCTION__;
 
-        // For clang
+#if defined(__clang__)
         auto start = pretty_name.rfind('=')  + 2;
         auto end = pretty_name.size() - 1;
+#elif defined(__GNUC__)
+        std::size_t start = 86;
+        auto end = pretty_name.find(';', start);
+#endif
 
         // Scoped enum case
         auto colon_position = pretty_name.rfind(':', end);
