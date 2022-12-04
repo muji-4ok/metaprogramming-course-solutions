@@ -50,7 +50,7 @@ struct EnumeratorTraits {
 
         for (std::size_t i = 0, out_i = 0; out_i < values_count; ++i) {
             if (valid[i]) {
-                values_storage[out_i++] = static_cast<Enum>(index_to_value(i));
+                values_storage[out_i++] = index_to_value(i);
             }
         }
 
@@ -78,11 +78,11 @@ struct EnumeratorTraits {
 
     template<std::size_t index>
     static constexpr bool index_valid() {
-        return value_valid<static_cast<Enum>(index_to_value(index))>();
+        return value_valid<index_to_value(index)>();
     }
 
-    static constexpr enum_type index_to_value(std::size_t i) {
-        return i + min_possible();
+    static constexpr Enum index_to_value(std::size_t i) {
+        return static_cast<Enum>(i + min_possible());
     }
 
     template<Enum e>
