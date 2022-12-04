@@ -89,18 +89,12 @@ struct EnumeratorTraits {
     }
 
     template<Enum e>
-    static constexpr bool value_valid() {
-        auto offset = 81;
-        std::string_view pretty_name = __PRETTY_FUNCTION__;
-        return pretty_name[offset] != '(';
-    }
-
-    template<Enum e>
     static constexpr std::string_view name() {
         std::string_view pretty_name = __PRETTY_FUNCTION__;
 
-        std::size_t start = 86;
-        auto end = pretty_name.find(';', start);
+        // For clang
+        auto start = pretty_name.rfind('=')  + 2;
+        auto end = pretty_name.size() - 1;
 
         // Scoped enum case
         auto colon_position = pretty_name.rfind(':', end);
@@ -114,6 +108,13 @@ struct EnumeratorTraits {
         return pretty_name.substr(start, size);
     }
 
+    template<Enum e>
+    static constexpr bool value_valid() {
+        return name<e>()[0] != '(';
+    }
+
+    // The order is as such because each next variables uses the previous one
+    // `valid_map` -> used by `values` -> used by `names`
     inline static constexpr auto valid_map = EnumeratorTraits::generate_valid_map();
     inline static constexpr auto values = EnumeratorTraits::generate_values();
     inline static constexpr auto names = EnumeratorTraits::generate_names();
