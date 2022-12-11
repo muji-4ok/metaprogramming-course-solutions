@@ -135,7 +135,7 @@ class Spy {
     }
 
     std::unique_ptr<LoggerHolderBase> clone() const override {
-      return nullptr;
+      assert(false || "Unreachable!");
     }
 
    private:
