@@ -44,25 +44,6 @@ struct ToTupleImpl<E, Prev...> {
   using Tuple = type_tuples::TTuple<Prev...>;
 };
 
-template<typename... Types>
-struct TLFromTypes {
-};
-
-template<typename First, typename... Others>
-struct TLFromTypes<First, Others...> {
-  using TL = Cons<First, typename TLFromTypes<Others...>::TL>;
-};
-
-template<>
-struct TLFromTypes<> {
-  using TL = Nil;
-};
-
-template<typename... Types>
-struct TLFromTypes<type_tuples::TTuple<Types...>> {
-  using TL = typename TLFromTypes<Types...>::TL;
-};
-
 // ** HEAD **
 template<TypeList TL>
 struct HeadImpl {
@@ -91,44 +72,49 @@ struct TailImpl<E> {
 template<TypeList TL>
 using GetTail = typename TailImpl<TL>::TLOut;
 
-template<std::size_t N, TypeList TL>
-struct TakeImpl {
-  using TLOut = Cons<GetHead<TL>, typename TakeImpl<N - 1, GetTail<TL>>::TLOut>;
-};
-
-template<std::size_t N, Empty E>
-struct TakeImpl<N, E> {
-  using TLOut = E;
-};
-
-template<TypeList TL>
-struct TakeImpl<0, TL> {
-  using TLOut = Nil;
-};
-
-template<std::size_t N, TypeList TL>
-struct DropImpl {
-  using TLOut = GetTail<typename DropImpl<N - 1, TL>::TLOut>;
-};
-
-template<TypeList TL>
-struct DropImpl<0, TL> {
-  using TLOut = TL;
-};
-
-}
+} // namespace
 
 template<TypeList TL>
 using ToTuple = typename ToTupleImpl<TL>::Tuple;
 
-template<type_tuples::TypeTuple TypeTuple>
-using FromTuple = typename TLFromTypes<TypeTuple>::TL;
+template<typename TypeTuple>
+struct FromTuple {
+};
+
+template<typename First, typename... Others>
+struct FromTuple<type_tuples::TTuple<First, Others...>> {
+  using Head = First;
+  using Tail = FromTuple<type_tuples::TTuple<Others...>>;
+};
+
+template<>
+struct FromTuple<type_tuples::TTuple<>> : Nil {
+};
 
 template<std::size_t N, TypeList TL>
-using Take = typename TakeImpl<N, TL>::TLOut;
+struct Take : TL {
+  using Tail = Take<N - 1, typename TL::Tail>;
+};
+
+template<TypeList TL>
+struct Take<0, TL> : Nil {
+};
+
+template<std::size_t N, Empty E>
+struct Take<N, E> : Nil {
+};
 
 template<std::size_t N, TypeList TL>
-using Drop = typename DropImpl<N, TL>::TLOut;
+struct Drop : Drop<N - 1, typename TL::Tail> {
+};
+
+template<TypeList TL>
+struct Drop<0, TL> : TL {
+};
+
+template<std::size_t N, Empty E>
+struct Drop<N, E> : E {
+};
 
 template<std::size_t N, typename T>
 using Replicate = Take<N, Repeat<T>>;
@@ -139,24 +125,17 @@ struct Iterate {
   using Tail = Iterate<MetaFunc, MetaFunc<T>>;
 };
 
-namespace {
-
-template<TypeSequence FullCycle, TypeList PartOfCycle>
-struct CycleImpl {
+template<TypeSequence FullCycle, TypeList PartOfCycle = Nil>
+struct Cycle {
   using Head = typename PartOfCycle::Head;
-  using Tail = CycleImpl<FullCycle, Drop<1, PartOfCycle>>;
+  using Tail = Cycle<FullCycle, Drop<1, PartOfCycle>>;
 };
 
 template<TypeSequence FullCycle, Empty E>
-struct CycleImpl<FullCycle, E> {
+struct Cycle<FullCycle, E> {
   using Head = typename FullCycle::Head;
-  using Tail = CycleImpl<FullCycle, Drop<1, FullCycle>>;
+  using Tail = Cycle<FullCycle, Drop<1, FullCycle>>;
 };
-
-}
-
-template<TypeSequence TL>
-using Cycle = CycleImpl<TL, Nil>;
 
 template<template<typename> typename MetaFunc, TypeList TL>
 struct Map {
@@ -165,29 +144,21 @@ struct Map {
 };
 
 template<template<typename> typename MetaFunc, Empty E>
-struct Map<MetaFunc, E> : public E {
+struct Map<MetaFunc, E> : E {
 };
 
 template<template<typename> typename MetaPredicate, TypeList TL>
 struct Filter {
-};
-
-template<template<typename> typename MetaPredicate, TypeSequence TL> requires MetaPredicate<typename TL::Head>::Value
-struct Filter<MetaPredicate, TL> {
   using Head = typename TL::Head;
   using Tail = Filter<MetaPredicate, typename TL::Tail>;
 };
 
-template<template<typename> typename MetaPredicate, TypeSequence TL> requires (!MetaPredicate<
-    typename TL::Head>::Value)
-struct Filter<MetaPredicate, TL> {
-  using Next = Filter<MetaPredicate, typename TL::Tail>;
-  using Head = GetHead<Next>;
-  using Tail = GetTail<Next>;
+template<template<typename> typename MetaPredicate, TypeList TL> requires (!MetaPredicate<typename TL::Head>::Value)
+struct Filter<MetaPredicate, TL> : Filter<MetaPredicate, typename TL::Tail> {
 };
 
 template<template<typename> typename MetaPredicate, Empty E>
-struct Filter<MetaPredicate, E> : public E {
+struct Filter<MetaPredicate, E> : E {
 };
 
 template<template<typename, typename> typename MetaOp, typename StartType, TypeList TL>
@@ -223,22 +194,27 @@ using Foldl = typename FoldlImpl<MetaOp, StartType, TL>::Type;
 
 namespace {
 
-template<std::size_t N, TypeList TL>
-struct InitsImpl {
-  using Head = Take<N, TL>;
-  using Tail = InitsImpl<N + 1, TL>;
-};
-
-template<std::size_t N, TypeList TL> requires(std::same_as<Take<N, TL>, TL>)
-struct InitsImpl<N, TL> {
-  using Head = Take<N, TL>;
-  using Tail = Nil;
-};
-
+template<Empty E>
+constexpr std::size_t Size() {
+  return 0;
 }
 
 template<TypeList TL>
-using Inits = InitsImpl<0, TL>;
+consteval std::size_t Size() {
+  return 1 + Size<typename TL::Tail>();
+}
+
+} // namespace
+
+template<TypeList TL, std::size_t N = 0>
+struct Inits {
+  using Head = Take<N, TL>;
+  using Tail = Inits<TL, N + 1>;
+};
+
+template<TypeList TL, std::size_t N> requires (N > 0) && (Size<Take<N, TL>>() == N - 1)
+struct Inits<TL, N> : Nil {
+};
 
 template<TypeList TL>
 struct Tails {
@@ -259,11 +235,11 @@ struct Zip2 {
 };
 
 template<Empty E, TypeList Right>
-struct Zip2<E, Right> : public E {
+struct Zip2<E, Right> : E {
 };
 
 template<TypeList Left, Empty E>
-struct Zip2<Left, E> : public E {
+struct Zip2<Left, E> : E {
 };
 
 template<TypeList... TLs>
