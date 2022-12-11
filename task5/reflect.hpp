@@ -7,8 +7,12 @@
 #include <cassert>
 #include <numeric>
 #include <algorithm>
+#include <functional>
 
-//namespace {
+template<typename...>
+class Annotate {};
+
+namespace {
 
 template<std::size_t Index> // only for pack-expansion to work
 struct AnyCastable {
@@ -101,14 +105,6 @@ T declval();
 template<typename T, std::size_t Index>
 using FieldAtIndex = std::decay_t<std::tuple_element_t<Index,
                                                        decltype(ConvertToTuple<T>(declval<T &>()))>>;
-
-//} // namespace
-
-
-template<typename...>
-class Annotate {};
-
-//namespace {
 
 template<typename T>
 concept IsAnnotation = requires(T t) {
@@ -205,15 +201,7 @@ constexpr auto IsAnnotationClassMapping(Annotate<Annotations...>) {
 
 template<typename Target, typename Annotation>
 constexpr bool HasAnnotationClass() {
-    constexpr auto mapping = IsAnnotationClassMapping<Target>(Annotation{});
-
-    for (auto value : mapping) {
-        if (value) {
-            return true;
-        }
-    }
-
-    return false;
+    return std::ranges::any_of(IsAnnotationClassMapping<Target>(Annotation{}), std::identity{});
 }
 
 template<typename T, template<typename...> typename Template>
@@ -235,49 +223,35 @@ constexpr auto IsAnnotationTemplateMapping(Annotate<Annotations...>) {
         IsTemplateOf<Annotations, TargetTemplate>...};
 }
 
-template<template<typename...> typename TargetTemplate, typename Annotation>
+template<template<typename...> typename TargetTemplate, typename CompositeAnnotation>
 constexpr bool HasAnnotationTemplate() {
-    constexpr auto mapping = IsAnnotationTemplateMapping<TargetTemplate>(Annotation{});
-
-    for (auto value : mapping) {
-        if (value) {
-            return true;
-        }
-    }
-
-    return false;
+    return std::ranges::any_of(IsAnnotationTemplateMapping<TargetTemplate>(CompositeAnnotation{}),
+                               std::identity{});
 }
 
-template<template<typename...> typename TargetTemplate, typename Annotation>
+template<template<typename...> typename TargetTemplate, typename CompositeAnnotation>
 constexpr std::size_t GetIndexOfAnnotationTemplate() {
-    constexpr auto mapping = IsAnnotationTemplateMapping<TargetTemplate>(Annotation{});
-
-    for (std::size_t i = 0; i < mapping.size(); ++i) {
-        if (mapping[i]) {
-            return i;
-        }
-    }
-
-    // Invalid index
-    return mapping.size();
+    constexpr auto mapping = IsAnnotationTemplateMapping<TargetTemplate>(CompositeAnnotation{});
+    auto it = std::ranges::find(mapping, true);
+    return it ? std::ranges::distance(std::ranges::begin(mapping), it) : mapping.size();
 }
 
 template<std::size_t Index, typename Annotation>
-struct GetAnnotationAtIndex {
+struct GetAnnotationArgAtIndex {
 };
 
-template<std::size_t Index, template<typename...> typename Annotation, typename... Annotations> requires (
-    Index < sizeof...(Annotations))
-struct GetAnnotationAtIndex<Index, Annotation<Annotations...>> {
-    using type = std::tuple_element_t<Index, std::tuple<Annotations...>>;
+template<std::size_t Index, template<typename...> typename Annotation, typename... Args> requires (
+    Index < sizeof...(Args))
+struct GetAnnotationArgAtIndex<Index, Annotation<Args...>> {
+    using type = std::tuple_element_t<Index, std::tuple<Args...>>;
 };
 
-template<template<typename...> typename TargetTemplate, typename Annotation>
-using GetAnnotationForTemplate = typename GetAnnotationAtIndex<GetIndexOfAnnotationTemplate<
+template<template<typename...> typename TargetTemplate, typename CompositeAnnotation>
+using FindAnnotationForTemplate = typename GetAnnotationArgAtIndex<GetIndexOfAnnotationTemplate<
     TargetTemplate,
-    Annotation>(), Annotation>::type;
+    CompositeAnnotation>(), CompositeAnnotation>::type;
 
-//} // namespace
+} // namespace
 
 template<typename T, std::size_t Index>
 struct FieldDescriptor {
@@ -292,7 +266,7 @@ struct FieldDescriptor {
     static constexpr bool has_annotation_class = HasAnnotationClass<Annotation, Annotations>();
 
     template<template<typename...> class AnnotationTemplate>
-    using FindAnnotation = GetAnnotationForTemplate<AnnotationTemplate, Annotations>;
+    using FindAnnotation = FindAnnotationForTemplate<AnnotationTemplate, Annotations>;
 };
 
 template<typename T>
