@@ -43,59 +43,7 @@ constexpr std::size_t
 template<typename T>
 constexpr auto ConvertToTuple(T &value) {
     constexpr auto field_count = CountFields<T>;
-
-    if constexpr (field_count == 0) {
-        return std::tuple<>();
-    } else if constexpr (field_count == 1) {
-        auto &[v1] = value;
-        return std::tie(v1);
-    } else if constexpr (field_count == 2) {
-        auto &[v1, v2] = value;
-        return std::tie(v1, v2);
-    } else if constexpr (field_count == 3) {
-        auto &[v1, v2, v3] = value;
-        return std::tie(v1, v2, v3);
-    } else if constexpr (field_count == 4) {
-        auto &[v1, v2, v3, v4] = value;
-        return std::tie(v1, v2, v3, v4);
-    } else if constexpr (field_count == 5) {
-        auto &[v1, v2, v3, v4, v5] = value;
-        return std::tie(v1, v2, v3, v4, v5);
-    } else if constexpr (field_count == 6) {
-        auto &[v1, v2, v3, v4, v5, v6] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6);
-    } else if constexpr (field_count == 7) {
-        auto &[v1, v2, v3, v4, v5, v6, v7] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7);
-    } else if constexpr (field_count == 8) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8);
-    } else if constexpr (field_count == 9) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9);
-    } else if constexpr (field_count == 10) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10);
-    } else if constexpr (field_count == 11) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11);
-    } else if constexpr (field_count == 12) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12);
-    } else if constexpr (field_count == 13) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13);
-    } else if constexpr (field_count == 14) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14);
-    } else if constexpr (field_count == 15) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15);
-    } else if constexpr (field_count == 16) {
-        auto &[v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16] = value;
-        return std::tie(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16);
-    }
-
+#include "bindings.h"
     assert(false || "Struct has too many fields!");
 }
 
